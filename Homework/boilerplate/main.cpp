@@ -243,6 +243,8 @@ int main(int argc, char *argv[]) {
             if (idx >= 0) {  // 若查找到则为表项序号，否则为-1
               RoutingTableEntry& rte = router_table[idx]; // 查找到的表项的引用
               if (rte.if_index == if_index) {
+                if (rte.nexthop == 0)
+                  continue; // 如果是直连路由则直接跳过
                 if (metric > 16) {
                   rte = router_table[--router_table_len]; // 直接操作数组删除表项
                 } else {
