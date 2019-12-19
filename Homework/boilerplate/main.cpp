@@ -8,7 +8,7 @@
 #include <arpa/inet.h>
 
 #define CYAN printf("\e[36m")
-#define GREEN printf("\e[32m")
+#define GREEN printf("\e[33m")
 #define CLOSE_COLOR printf("\e[0m")
 
 extern bool validateIPChecksum(uint8_t *packet, size_t len);
@@ -42,13 +42,13 @@ void print_route_table() {
     uint32_t addr = rte.addr;
     uint32_t nthp = rte.nexthop;
     CYAN;  printf("addr: ");
-    GREEN; printf("%u.%u.%u.%u ", addr & 0xff, (addr >> 8) & 0xff, (addr >> 16) & 0xff, (addr >> 24) & 0xff);
+    GREEN; printf("%3u.%3u.%3u.%3u ", addr & 0xff, (addr >> 8) & 0xff, (addr >> 16) & 0xff, (addr >> 24) & 0xff);
     CYAN;  printf("len: ");
-    GREEN; printf("%2u ", rte.len);
+    GREEN; printf("%2u  ", rte.len);
     CYAN;  printf("if: ");
-    GREEN; printf("%u ", rte.len);
+    GREEN; printf("%u  ", rte.if_index);
     CYAN;  printf("nexthop: ");
-    GREEN; printf("%u.%u.%u.%u ", nthp & 0xff, (nthp >> 8) & 0xff, (nthp >> 16) & 0xff, (nthp >> 24) & 0xff);
+    GREEN; printf("%3u.%3u.%3u.%3u ", nthp & 0xff, (nthp >> 8) & 0xff, (nthp >> 16) & 0xff, (nthp >> 24) & 0xff);
     CYAN;  printf("metric: ");
     GREEN; printf("%u\n", htonl(rte.metric));
   }
@@ -98,10 +98,10 @@ void set_ip_udp_head(uint32_t length, uint32_t src, uint32_t dst) {
 }
 
 // RoutingTableEntry转换成RipEntry
-void set_rip_entry(RipEntry& t, RoutingTableEntry& s) {
+void set_rip_entry(RipEntry& t, RoutingTableEntry& s, int if_idx) {
   t.addr = s.addr;
   t.mask = ntohl(masks[s.len]); // 注意小端序转换成大端序
-  t.nexthop = s.nexthop;
+  t.nexthop = addrs[if_idx];
   t.metric = s.metric;
 }
 
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
         for (int j = 0; j < router_table_len; j++) {
           // 只发送不同端口的表项，即端口a的表项不会发回给端口a
           if (router_table[j].if_index != i)
-            set_rip_entry(rip.entries[cnt++], router_table[j]);
+            set_rip_entry(rip.entries[cnt++], router_table[j], i);
         }
         rip.numEntries = cnt;             // 填入表项数量
         assemble(&rip, output + 28);      // 组装rip报文
@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
           resp.command = 2;
           for (int j = 0; j < router_table_len; j++) {
             if (router_table[j].if_index != if_index)
-              set_rip_entry(resp.entries[cnt++], router_table[j]);
+              set_rip_entry(resp.entries[cnt++], router_table[j], if_index);
           }
           resp.numEntries = cnt;
           // assemble
@@ -242,9 +242,9 @@ int main(int argc, char *argv[]) {
             int idx = query_router_entry(r_entry.addr, len);
             if (idx >= 0) {  // 若查找到则为表项序号，否则为-1
               RoutingTableEntry& rte = router_table[idx]; // 查找到的表项的引用
+              if (rte.nexthop == 0)
+                continue; // 如果是直连路由则直接跳过
               if (rte.if_index == if_index) {
-                if (rte.nexthop == 0)
-                  continue; // 如果是直连路由则直接跳过
                 if (metric > 16) {
                   rte = router_table[--router_table_len]; // 直接操作数组删除表项
                 } else {
