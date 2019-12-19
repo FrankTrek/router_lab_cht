@@ -8,7 +8,7 @@
 #include <arpa/inet.h>
 
 #define CYAN printf("\e[36m")
-#define GREEN printf("\e[33m")
+#define GREEN printf("\e[32m")
 #define CLOSE_COLOR printf("\e[0m")
 
 extern bool validateIPChecksum(uint8_t *packet, size_t len);
@@ -32,16 +32,16 @@ uint8_t output[2048];
 // 2: 10.0.2.1
 // 3: 10.0.3.1
 // 你可以按需进行修改，注意端序
-in_addr_t addrs[N_IFACE_ON_BOARD] = {0x0203a8c0, 0x0104a8c0, 0x0102000a,
+in_addr_t addrs[N_IFACE_ON_BOARD] = {0x0204a8c0, 0x0205a8c0, 0x0102000a,
                                      0x0103000a};
 
 void print_route_table() {
-  CYAN; printf("router_table:");
+  CYAN; printf("router_table:\n");
   for (int i = 0; i < router_table_len; i++) {
     RoutingTableEntry& rte = router_table[i];
     uint32_t addr = rte.addr;
     uint32_t nthp = rte.nexthop;
-    CYAN;  printf("addr: ");
+    CYAN;  printf("addr:");
     GREEN; printf("%3u.%3u.%3u.%3u ", addr & 0xff, (addr >> 8) & 0xff, (addr >> 16) & 0xff, (addr >> 24) & 0xff);
     CYAN;  printf("len: ");
     GREEN; printf("%2u  ", rte.len);
@@ -298,7 +298,7 @@ int main(int argc, char *argv[]) {
       } else {
         // not found
         // optionally you can send ICMP Host Unreachable
-        printf("IP not found for %x\n", src_addr);
+        printf("IP not found for %x, %x\n", src_addr, dst_addr);
       }
     }
   }
