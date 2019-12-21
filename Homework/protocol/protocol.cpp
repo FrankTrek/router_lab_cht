@@ -46,7 +46,7 @@ bool checkMask(uint32_t mask) {
  * @param len 即 packet 的长度
  * @param output 把解析结果写入 *output
  * @return 如果输入是一个合法的 RIP 包，把它的内容写入 RipPacket 并且返回 true；否则返回 false
- * 
+ *
  * IP 包的 Total Length 长度可能和 len 不同，当 Total Length 大于 len 时，把传入的 IP 包视为不合法。
  * 你不需要校验 IP 头和 UDP 的校验和是否合法。
  * 你需要检查 Command 是否为 1 或 2，Version 是否为 2， Zero 是否为 0，
@@ -108,7 +108,7 @@ bool disassemble(const uint8_t *packet, uint32_t len, RipPacket *output) {
  * @param rip 一个 RipPacket 结构体
  * @param buffer 一个足够大的缓冲区，你要把 RIP 协议的数据写进去
  * @return 写入 buffer 的数据长度
- * 
+ *
  * 在构造二进制格式的时候，你需要把 RipPacket 中没有保存的一些固定值补充上，包括 Version、Zero、Address Family 和 Route Tag 这四个字段
  * 你写入 buffer 的数据长度和返回值都应该是四个字节的 RIP 头，加上每项 20 字节。
  * 需要注意一些没有保存在 RipPacket 结构体内的数据的填写。

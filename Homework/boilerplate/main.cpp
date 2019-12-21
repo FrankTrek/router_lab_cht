@@ -32,7 +32,7 @@ uint8_t output[2048];
 // 2: 10.0.2.1
 // 3: 10.0.3.1
 // 你可以按需进行修改，注意端序
-in_addr_t addrs[N_IFACE_ON_BOARD] = {0x0204a8c0, 0x0205a8c0, 0x0102000a,
+in_addr_t addrs[N_IFACE_ON_BOARD] = {0x0101a8c0, 0x0103a8c0, 0x0102a8c0,
                                      0x0103000a};
 
 void print_route_table() {
@@ -148,7 +148,16 @@ int main(int argc, char *argv[]) {
           // 只发送不同端口的表项，即端口a的表项不会发回给端口a
           if (router_table[j].if_index != i)
             set_rip_entry(rip.entries[cnt++], router_table[j], i);
+          if (cnt == 25) {
+            rip.numEntries = 25;              // 填入表项数量
+            assemble(&rip, output + 28);      // 组装rip报文
+            uint32_t length = 532;            // ip包总长度
+            set_ip_udp_head(length, addrs[i], multicast_ip_addr);
+            HAL_SendIPPacket(i, output, length, multicast_mac_addr);
+            cnt = 0;
+          }
         }
+        if (cnt == 0) continue;
         rip.numEntries = cnt;             // 填入表项数量
         assemble(&rip, output + 28);      // 组装rip报文
         uint32_t length = 32 + cnt * 20;  // ip包总长度
@@ -179,7 +188,7 @@ int main(int argc, char *argv[]) {
     }
 
     // 1. validate
-    if (!validateIPChecksum(packet, res)) {
+    if (!forward(packet, res)) {
       printf("Invalid IP Checksum\n");
       continue;
     }
@@ -216,9 +225,19 @@ int main(int argc, char *argv[]) {
           RipPacket resp;
           resp.command = 2;
           for (int j = 0; j < router_table_len; j++) {
+            // 只发送不同端口的表项，即端口a的表项不会发回给端口a
             if (router_table[j].if_index != if_index)
-              set_rip_entry(resp.entries[cnt++], router_table[j], if_index);
+              set_rip_entry(rip.entries[cnt++], router_table[j], if_index);
+            if (cnt == 25) {
+              rip.numEntries = 25;              // 填入表项数量
+              assemble(&rip, output + 28);      // 组装rip报文
+              uint32_t length = 532;            // ip包总长度
+              set_ip_udp_head(length, addrs[if_index], multicast_ip_addr);
+              HAL_SendIPPacket(if_index, output, length, multicast_mac_addr);
+              cnt = 0;
+            }
           }
+          if (cnt == 0) continue;
           resp.numEntries = cnt;
           // assemble
           assemble(&resp, output + 28);
@@ -283,12 +302,12 @@ int main(int argc, char *argv[]) {
         }
         if (HAL_ArpGetMacAddress(dest_if, nexthop, dest_mac) == 0) {
           // found
-          memcpy(output, packet, res);
+          // memcpy(output, packet, res);
           // update ttl and checksum
-          forward(output, res);
+          // forward(output, res);
           // ttl == 0 则直接忽略
-          if (output[8] != 0) {
-            HAL_SendIPPacket(dest_if, output, res, dest_mac);
+          if (packet[8] != 0) {
+            HAL_SendIPPacket(dest_if, packet, res, dest_mac);
           }
         } else {
           // not found

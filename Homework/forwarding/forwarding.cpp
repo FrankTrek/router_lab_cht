@@ -26,8 +26,7 @@ bool forward(uint8_t *packet, size_t len) {
 
     // 增量更新
     packet[8]--;
-    total_sum -= 1 << 8;
-    sum = total_sum;
+    sum = total_sum - (1 << 8);
     while (sum >> 16 > 0)
         sum = (sum >> 16) + (sum & 0xffff);
     sum = ~sum & 0xffff;
