@@ -18,7 +18,7 @@
   当 nexthop 为零时这是一条直连路由。
   你可以在全局变量中把路由表以一定的数据结构格式保存下来。
 */
-RoutingTableEntry router_table[100];
+RoutingTableEntry router_table[6000];
 uint32_t router_table_len = 0;
 uint32_t masks[33] = { 0x00000000,
     0x80000000, 0xC0000000, 0xE0000000, 0xF0000000,
